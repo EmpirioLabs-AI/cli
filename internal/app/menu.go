@@ -220,7 +220,7 @@ func (m menuModel) header() string {
 		}
 		b.WriteString(line + "\n")
 	} else {
-		b.WriteString(mutedStyle.Render("Not signed in. Press l to add your API key.") + "\n")
+		b.WriteString(mutedStyle.Render("Not signed in. Press l to sign in.") + "\n")
 	}
 	return b.String()
 }
@@ -260,6 +260,11 @@ func (m menuModel) pickerView() string {
 	b.WriteString("Search: " + m.filter + "\n\n")
 	list := m.filtered()
 	end := min(len(list), m.offset+pageSize)
+	// The id column fits the longest id on this page, so rows stay aligned.
+	idWidth := 24
+	for i := m.offset; i < end; i++ {
+		idWidth = max(idWidth, min(len(list[i].ID), 48))
+	}
 	for i := m.offset; i < end; i++ {
 		mm := list[i]
 		line := mm.ID
@@ -271,7 +276,7 @@ func (m menuModel) pickerView() string {
 		if mm.ContextWindow > 0 {
 			ctx = agents.Tokens(mm.ContextWindow)
 		}
-		row := fmt.Sprintf("%-30s %-6s %-18s %s", line, ctx, price, mm.Name())
+		row := fmt.Sprintf("%-*s  %-6s %-18s %s", idWidth, line, ctx, price, mm.Name())
 		if i == m.modelCursor {
 			b.WriteString(selectedStyle.Render("> "+row) + "\n")
 		} else {
