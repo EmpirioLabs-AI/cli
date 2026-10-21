@@ -1,0 +1,3 @@
+# Keys that sign empirio releases (SHA256SUMS.sig). Check a release with:
+#   ssh-keygen -Y verify -f allowed_signers -I release@empiriolabs.ai -n empirio-release -s SHA256SUMS.sig < SHA256SUMS
+release@empiriolabs.ai namespaces="empirio-release" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGBE/2Npm/ixxdwNX+ldPJnpzlh8sp/3T8nHD5LtoXKb empirio-release-2026

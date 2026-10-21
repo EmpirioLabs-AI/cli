@@ -1,0 +1,4 @@
+# Every file keeps LF line endings, so install.sh runs and gofmt agrees on any checkout.
+* text=auto eol=lf
+*.zip binary
+*.gz binary
