@@ -8,7 +8,10 @@ import (
 	"testing"
 )
 
-const testMCP = "https://mcp.empiriolabs.ai/mcp/" + DefaultToolsets
+const testMCP = "https://mcp.empiriolabs.ai/mcp/" + DefaultProfile
+
+// served is what the server's manifest lists: its toolsets and its listed profiles.
+var served = []string{"account", "agents", "batch", "cloud", "gpu", "hosted_agents", "inference", "jobs", "media", "models", "search", "text"}
 
 func TestToolsURL(t *testing.T) {
 	cases := map[string]string{
@@ -21,16 +24,38 @@ func TestToolsURL(t *testing.T) {
 		"Search + gpu":  MCPBase + "/search+gpu",
 		"media+media":   MCPBase + "/media",
 		"hosted_agents": MCPBase + "/hosted_agents",
+		"inference+gpu": MCPBase + "/inference+gpu",
 	}
 	for in, want := range cases {
-		got, err := ToolsURL(MCPBase, in)
+		got, err := ToolsURL(MCPBase, in, served)
 		if err != nil || got != want {
 			t.Errorf("ToolsURL(%q) = %q, %v; want %q", in, got, err, want)
 		}
 	}
 	for _, bad := range []string{"everything", "search+nope", "search+", "../x"} {
-		if _, err := ToolsURL(MCPBase, bad); err == nil {
+		if _, err := ToolsURL(MCPBase, bad, served); err == nil {
 			t.Errorf("ToolsURL(%q) was accepted", bad)
+		}
+	}
+	if _, err := ToolsURL(MCPBase, "nope", served); err == nil || !strings.Contains(err.Error(), "choose from account, agents") {
+		t.Errorf("an unknown toolset should list the server's toolsets, got %v", err)
+	}
+}
+
+// Without the server's list (it could not be read), a toolset the server
+// added after this release still works, and a malformed name is still refused.
+func TestToolsURLWithoutTheServersList(t *testing.T) {
+	if got, err := ToolsURL(MCPBase, "brand_new+search", nil); err != nil || got != MCPBase+"/brand_new+search" {
+		t.Errorf("ToolsURL(brand_new+search) = %q, %v", got, err)
+	}
+	for _, bad := range []string{"search+", "../x", "a/b", "UPPER$", strings.Repeat("a", 33)} {
+		if _, err := ToolsURL(MCPBase, bad, nil); err == nil {
+			t.Errorf("ToolsURL(%q) was accepted", bad)
+		}
+	}
+	for in, want := range map[string]bool{"": false, "default": false, "ALL": false, "none": false, "off": false, "search": true, "gpu+media": true} {
+		if got := NamesToolsets(in); got != want {
+			t.Errorf("NamesToolsets(%q) = %v, want %v", in, got, want)
 		}
 	}
 }

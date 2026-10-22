@@ -85,16 +85,19 @@ lowest-cost featured model by the same author; `--fast-model <id>` picks another
 ## EmpirioLabs AI tools
 
 Agents marked "yes" under "EmpirioLabs AI tools" in the table above also get the
-[EmpirioLabs AI MCP server](https://docs.empiriolabs.ai/mcp) with the same key:
-web search and research, image, video, speech, audio and 3D generation, image
-editing and analysis, the model catalog, generation jobs and your balance. A tool
-call is billed like the same API request.
+[EmpirioLabs AI MCP server](https://docs.empiriolabs.ai/mcp) with the same key. A
+session gets the toolsets of the server's `coding-agents` profile, which the
+server defines; the [CLI docs](https://docs.empiriolabs.ai/cli#empiriolabs-ai-tools)
+list every toolset and the ones in the default. A tool call is billed like the
+same API request.
 
 ```sh
-empirio claude --tools all            # also GPU Cloud and hosted agents, which bill while they run
+empirio claude --tools all            # every toolset, with GPU Cloud and hosted agents, which bill while they run
 empirio codex --tools search+media    # only these toolsets
 empirio gemini --tools none           # no EmpirioLabs AI tools
 ```
+
+Toolsets named with `--tools` are checked against the ones the server publishes.
 
 `EMPIRIO_TOOLS` sets the same for every session. The server is added next to the
 agent's own MCP servers for that session only, and a server you already named
