@@ -24,7 +24,8 @@ func init() {
 			"":        "curl -fsSL https://opencode.ai/install | bash",
 			"windows": "npm install -g opencode-ai",
 		},
-		Docs: "https://docs.empiriolabs.ai/integrations#opencode",
+		Docs:  "https://docs.empiriolabs.ai/integrations#opencode",
+		Tools: true,
 		Plan: func(c Context, binary string, args []string) (Plan, error) {
 			return planOpenCode(c, binary, args, "OPENCODE_CONFIG_CONTENT", "https://opencode.ai/config.json", "OpenCode", nil)
 		},
@@ -37,6 +38,7 @@ func init() {
 		Surface:  catalog.Chat,
 		Install:  map[string]string{"": "npm install -g @kilocode/cli"},
 		Docs:     "https://docs.empiriolabs.ai/integrations#kilo-cli",
+		Tools:    true,
 		Plan: func(c Context, binary string, args []string) (Plan, error) {
 			return planOpenCode(c, binary, args, "KILO_CONFIG_CONTENT", "https://app.kilo.ai/config.json", "Kilo CLI", map[string]string{
 				"KILO_TELEMETRY_LEVEL": "off",
@@ -96,6 +98,17 @@ func planOpenCode(c Context, binary string, args []string, contentEnv, schema, t
 				"models": models,
 			},
 		},
+	}
+	if c.MCPURL != "" {
+		// A remote MCP server, its bearer read from the environment like the key above.
+		config["mcp"] = map[string]any{
+			MCPName: map[string]any{
+				"type":    "remote",
+				"url":     c.MCPURL,
+				"enabled": true,
+				"headers": map[string]string{"Authorization": "Bearer {env:EMPIRIOLABS_API_KEY}"},
+			},
+		}
 	}
 	content, err := json.Marshal(config)
 	if err != nil {

@@ -19,6 +19,7 @@ func init() {
 		Surface:  catalog.Chat,
 		Install:  map[string]string{"": "npm install -g @qwen-code/qwen-code"},
 		Docs:     "https://docs.empiriolabs.ai/integrations#qwen-code",
+		Tools:    true,
 		Plan:     planQwen,
 	})
 }
@@ -29,15 +30,26 @@ func planQwen(c Context, binary string, args []string) (Plan, error) {
 	if !hasFlag(args, "-m", "--model") {
 		head = append(head, "--model", main.ID)
 	}
+	env := map[string]string{
+		"OPENAI_API_KEY":                c.Key,
+		"OPENAI_BASE_URL":               c.BaseURL + "/v1",
+		"OPENAI_MODEL":                  main.ID,
+		"QWEN_USAGE_STATISTICS_ENABLED": "false",
+	}
+	var files []File
+	// The EmpirioLabs AI tools come in through a session system-defaults file (defaults.go).
+	if extra, defaults, ok := mcpDefaults(c, "QWEN_CODE_SYSTEM_DEFAULTS_PATH",
+		`C:\ProgramData\qwen-code`, "/Library/Application Support/QwenCode", "/etc/qwen-code", "qwen"); ok {
+		for k, v := range extra {
+			env[k] = v
+		}
+		files = defaults
+	}
 	return Plan{
-		Binary: binary,
-		Args:   append(head, args...),
-		Env: map[string]string{
-			"OPENAI_API_KEY":                c.Key,
-			"OPENAI_BASE_URL":               c.BaseURL + "/v1",
-			"OPENAI_MODEL":                  main.ID,
-			"QWEN_USAGE_STATISTICS_ENABLED": "false",
-		},
+		Binary:  binary,
+		Args:    append(head, args...),
+		Env:     env,
+		Files:   files,
 		Secrets: []string{c.Key},
 		Summary: "Qwen Code on " + main.Name(),
 	}, nil

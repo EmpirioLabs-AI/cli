@@ -40,6 +40,9 @@ func usage() string {
 	b.WriteString("\n" + bold("Flags for an agent") + "\n")
 	b.WriteString("  -m, --model <id>      run on this model (default: your default, else the catalog's)\n")
 	b.WriteString("  --fast-model <id>     model for quick background work, where the agent has one\n")
+	b.WriteString("  --tools <set>         EmpirioLabs AI tools for the agent: default (web search, media,\n")
+	b.WriteString("                        models, jobs, account), all (adds GPU Cloud and hosted agents,\n")
+	b.WriteString("                        which bill while they run), none, or toolsets joined by +\n")
 	b.WriteString("  --print-env           show what would be passed to the agent, then exit\n\n")
 	b.WriteString("Docs: " + docsURL + "\n")
 	return b.String()
@@ -61,6 +64,7 @@ func Run(args []string) int {
 type launchFlags struct {
 	model    string
 	fast     string
+	tools    string
 	printEnv bool
 }
 
@@ -82,6 +86,13 @@ func takeFlags(args []string, f *launchFlags) ([]string, error) {
 				f.model = args[1]
 			}
 			args = args[2:]
+		case a == "--tools":
+			if len(args) < 2 || strings.HasPrefix(args[1], "-") {
+				return nil, fmt.Errorf("--tools needs a set: default, all, none, or toolsets joined by +")
+			}
+			f.tools, args = args[1], args[2:]
+		case strings.HasPrefix(a, "--tools="):
+			f.tools, args = strings.TrimPrefix(a, "--tools="), args[1:]
 		case strings.HasPrefix(a, "--model="):
 			f.model, args = strings.TrimPrefix(a, "--model="), args[1:]
 		case strings.HasPrefix(a, "--fast-model="):
@@ -155,7 +166,7 @@ func run(args []string) (int, error) {
 // checkOverrides refuses an environment override that would send the key or
 // a download in the clear.
 func checkOverrides() error {
-	for _, name := range []string{"EMPIRIOLABS_BASE_URL", "EMPIRIO_OAUTH_ISSUER", "EMPIRIO_RELEASES"} {
+	for _, name := range []string{"EMPIRIOLABS_BASE_URL", "EMPIRIO_OAUTH_ISSUER", "EMPIRIO_RELEASES", "EMPIRIO_MCP_URL"} {
 		if err := api.CheckOverride(name); err != nil {
 			return err
 		}
@@ -197,6 +208,10 @@ func start(agent agents.Agent, flags launchFlags, args []string) (int, error) {
 	if binary == "" {
 		binary = agent.Binaries[0]
 	}
+	mcpURL, err := toolsURL(flags.tools)
+	if err != nil {
+		return 2, err
+	}
 	plan, err := agent.Plan(agents.Context{
 		Key:     key,
 		BaseURL: client.BaseURL,
@@ -205,6 +220,7 @@ func start(agent agents.Agent, flags launchFlags, args []string) (int, error) {
 		Catalog: cat,
 		Version: Version,
 		RunDir:  dir,
+		MCPURL:  mcpURL,
 	}, binary, args)
 	if err != nil {
 		return 2, err

@@ -32,7 +32,16 @@ type Context struct {
 	Catalog *catalog.Catalog
 	Version string
 	RunDir  string // where this session's temporary files go
+	// MCPURL is the EmpirioLabs AI MCP server the session's agent gets as tools
+	// (web search, image, video, speech and 3D generation, the catalog, jobs,
+	// the balance), with the toolsets in the path; "" when the user asked for
+	// none. An agent that cannot take a remote MCP server for one session
+	// without editing its own configuration ignores it (Tools reports which).
+	MCPURL string
 }
+
+// MCPName is how every agent names the EmpirioLabs AI MCP server.
+const MCPName = "empiriolabs"
 
 // File is written (mode 0600) before the agent starts and removed when it exits.
 type File struct {
@@ -65,6 +74,9 @@ type Agent struct {
 	Surface  catalog.Surface
 	Install  map[string]string // install command by GOOS, "" for every OS
 	Docs     string
+	// Tools is whether the agent gets the EmpirioLabs AI MCP server for the
+	// session (see Context.MCPURL); published in agents.json.
+	Tools bool
 	// Plan builds the launch; args are the user's own arguments for the agent.
 	Plan func(c Context, binary string, args []string) (Plan, error)
 }

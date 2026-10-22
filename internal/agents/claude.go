@@ -30,8 +30,9 @@ func init() {
 			"":        "curl -fsSL https://claude.ai/install.sh | bash",
 			"windows": "irm https://claude.ai/install.ps1 | iex",
 		},
-		Docs: "https://docs.empiriolabs.ai/integrations#claude-code",
-		Plan: planClaude,
+		Docs:  "https://docs.empiriolabs.ai/integrations#claude-code",
+		Tools: true,
+		Plan:  planClaude,
 	})
 }
 
@@ -75,7 +76,8 @@ func planClaude(c Context, binary string, args []string) (Plan, error) {
 		"env":   env,
 		"model": main.ID,
 		// WebSearch is a server tool of Anthropic's own API; elsewhere it returns
-		// nothing and the model has to recover. WebFetch keeps working.
+		// nothing and the model has to recover. WebFetch keeps working, and the
+		// EmpirioLabs AI tools (--mcp-config below) bring web_search instead.
 		"permissions": map[string]any{"deny": []string{"WebSearch"}},
 		"modelPicker": map[string]any{
 			"options":               claudePicker(c),
@@ -86,11 +88,32 @@ func planClaude(c Context, binary string, args []string) (Plan, error) {
 	if err != nil {
 		return Plan{}, err
 	}
-	file := filepath.Join(c.RunDir, "claude-settings-"+sessionID()+".json")
+	id := sessionID()
+	file := filepath.Join(c.RunDir, "claude-settings-"+id+".json")
+	launch := []string{"--settings", file}
+	files := []File{{Path: file, Data: data}}
+	if c.MCPURL != "" {
+		// --mcp-config adds the server to the user's own for this session only.
+		// The file holds the key like the settings file does, so it is written
+		// and removed the same way.
+		mcp, err := json.MarshalIndent(map[string]any{"mcpServers": map[string]any{
+			MCPName: map[string]any{
+				"type":    "http",
+				"url":     c.MCPURL,
+				"headers": map[string]string{"Authorization": "Bearer " + c.Key},
+			},
+		}}, "", "  ")
+		if err != nil {
+			return Plan{}, err
+		}
+		mcpFile := filepath.Join(c.RunDir, "claude-mcp-"+id+".json")
+		launch = append(launch, "--mcp-config", mcpFile)
+		files = append(files, File{Path: mcpFile, Data: mcp})
+	}
 	return Plan{
 		Binary:  binary,
-		Args:    append([]string{"--settings", file}, args...),
-		Files:   []File{{Path: file, Data: data}},
+		Args:    append(launch, args...),
+		Files:   files,
 		Secrets: []string{c.Key},
 		Summary: "Claude Code on " + main.Name() + " (fast: " + fast.Name() + ")",
 		// /model, then "set as default", saves `model` to the user's own settings.
