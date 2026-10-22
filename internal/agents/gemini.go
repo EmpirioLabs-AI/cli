@@ -16,6 +16,12 @@ import (
 // restarts itself after some settings change (exit code 199) and its own
 // restart drops the override, so empirio restarts it instead. Its web search
 // and web fetch tools call fixed Google models, so a session policy denies them.
+//
+// Gemini CLI gets no EmpirioLabs AI tools: it takes MCP servers only from its
+// user, project or system settings, and refuses a system file whose directory
+// an administrator does not own (Gemini CLI 0.65.0, 2026-10-22: "Skipping
+// system defaults file ... is insecure"). Adding them would mean editing the
+// user's settings or project, which empirio never does.
 func init() {
 	register(Agent{
 		Name:     "gemini",
@@ -45,19 +51,21 @@ func planGemini(c Context, binary string, args []string) (Plan, error) {
 	if !hasFlag(args, "-m", "--model") {
 		head = append(head, "--model", main.ID)
 	}
+	env := map[string]string{
+		"GEMINI_API_KEY":            c.Key,
+		"GOOGLE_GEMINI_BASE_URL":    c.BaseURL,
+		"GEMINI_CLI_AUTH_OVERRIDE":  "gemini-api-key",
+		"GEMINI_CLI_NO_RELAUNCH":    "true",
+		"GEMINI_TELEMETRY_ENABLED":  "false",
+		"GOOGLE_GENAI_USE_VERTEXAI": "false",
+	}
+	files := []File{{Path: policy, Data: []byte(geminiPolicy)}}
 	return Plan{
-		Binary: binary,
-		Args:   append(head, args...),
-		Env: map[string]string{
-			"GEMINI_API_KEY":            c.Key,
-			"GOOGLE_GEMINI_BASE_URL":    c.BaseURL,
-			"GEMINI_CLI_AUTH_OVERRIDE":  "gemini-api-key",
-			"GEMINI_CLI_NO_RELAUNCH":    "true",
-			"GEMINI_TELEMETRY_ENABLED":  "false",
-			"GOOGLE_GENAI_USE_VERTEXAI": "false",
-		},
+		Binary:   binary,
+		Args:     append(head, args...),
+		Env:      env,
 		Unset:    []string{"GOOGLE_API_KEY", "GOOGLE_CLOUD_PROJECT", "GOOGLE_APPLICATION_CREDENTIALS"},
-		Files:    []File{{Path: policy, Data: []byte(geminiPolicy)}},
+		Files:    files,
 		Secrets:  []string{c.Key},
 		Summary:  "Gemini CLI on " + main.Name(),
 		Relaunch: []int{199},

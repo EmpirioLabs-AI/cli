@@ -23,6 +23,9 @@ type agentRecord struct {
 	APIName string            `json:"api_name"`
 	Install map[string]string `json:"install"`
 	Docs    string            `json:"docs"`
+	// Tools: the agent gets the EmpirioLabs AI MCP server (web search, media
+	// generation, the catalog, jobs, the balance) for each session.
+	Tools bool `json:"tools"`
 }
 
 func agentRecords() []agentRecord {
@@ -43,7 +46,7 @@ func agentRecords() []agentRecord {
 		}
 		out = append(out, agentRecord{
 			Name: a.Name, Aliases: a.Aliases, Title: a.Title, Command: "empirio " + a.Name,
-			API: string(a.Surface), APIName: apiName(a.Surface), Install: install, Docs: a.Docs,
+			API: string(a.Surface), APIName: apiName(a.Surface), Install: install, Docs: a.Docs, Tools: a.Tools,
 		})
 	}
 	return out

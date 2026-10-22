@@ -25,8 +25,9 @@ func init() {
 			"":       "npm install -g @openai/codex",
 			"darwin": "brew install --cask codex",
 		},
-		Docs: "https://docs.empiriolabs.ai/integrations#codex-cli",
-		Plan: planCodex,
+		Docs:  "https://docs.empiriolabs.ai/integrations#codex-cli",
+		Tools: true,
+		Plan:  planCodex,
 	})
 }
 
@@ -50,6 +51,14 @@ func planCodex(c Context, binary string, args []string) (Plan, error) {
 	}
 	if main.Reasoning() {
 		overrides = append(overrides, `model_reasoning_summary="auto"`)
+	}
+	if c.MCPURL != "" {
+		// A streamable HTTP MCP server, authenticated from the same variable as
+		// the provider, so the key stays out of the arguments.
+		overrides = append(overrides,
+			fmt.Sprintf(`mcp_servers.%s.url=%q`, MCPName, c.MCPURL),
+			fmt.Sprintf(`mcp_servers.%s.bearer_token_env_var="EMPIRIOLABS_API_KEY"`, MCPName),
+		)
 	}
 	var out []string
 	for _, o := range overrides {

@@ -29,8 +29,9 @@ func init() {
 			"darwin":  "brew install charmbracelet/tap/crush",
 			"windows": "winget install charmbracelet.crush",
 		},
-		Docs: "https://docs.empiriolabs.ai/integrations#crush",
-		Plan: planCrush,
+		Docs:  "https://docs.empiriolabs.ai/integrations#crush",
+		Tools: true,
+		Plan:  planCrush,
 	})
 }
 
@@ -110,6 +111,16 @@ func planCrush(c Context, binary string, args []string) (Plan, error) {
 			},
 		},
 		"models": map[string]any{"large": crushSlot(main), "small": crushSlot(fast)},
+	}
+	if c.MCPURL != "" {
+		// Its bearer is named by reference, like the provider's key above.
+		config["mcp"] = map[string]any{
+			MCPName: map[string]any{
+				"type":    "http",
+				"url":     c.MCPURL,
+				"headers": map[string]string{"Authorization": "Bearer $EMPIRIOLABS_API_KEY"},
+			},
+		}
 	}
 	data, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {

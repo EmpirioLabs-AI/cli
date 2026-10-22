@@ -13,7 +13,7 @@ var installLabels = []struct{ key, label string }{{"default", ""}, {"darwin", "m
 func agentTable() string {
 	cell := func(s string) string { return "`" + strings.ReplaceAll(s, "|", `\|`) + "`" }
 	var b strings.Builder
-	b.WriteString("| Agent | Command | Install |\n|---|---|---|\n")
+	b.WriteString("| Agent | Command | EmpirioLabs AI tools | Install |\n|---|---|---|---|\n")
 	for _, r := range agentRecords() {
 		var install []string
 		for _, l := range installLabels {
@@ -25,7 +25,11 @@ func agentTable() string {
 				}
 			}
 		}
-		b.WriteString("| " + r.Title + " | `" + r.Command + "` | " + strings.Join(install, "<br>") + " |\n")
+		tools := "no"
+		if r.Tools {
+			tools = "yes"
+		}
+		b.WriteString("| " + r.Title + " | `" + r.Command + "` | " + tools + " | " + strings.Join(install, "<br>") + " |\n")
 	}
 	return b.String()
 }

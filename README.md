@@ -47,19 +47,19 @@ precedence.
 ## Agents
 
 <!-- agents:start (generated from the agent list; run `UPDATE_README=1 go test ./internal/app`) -->
-| Agent | Command | Install |
-|---|---|---|
-| Claude Code | `empirio claude` | `curl -fsSL https://claude.ai/install.sh \| bash`<br>Windows: `irm https://claude.ai/install.ps1 \| iex` |
-| Codex CLI | `empirio codex` | `npm install -g @openai/codex`<br>macOS: `brew install --cask codex` |
-| OpenCode | `empirio opencode` | `curl -fsSL https://opencode.ai/install \| bash`<br>Windows: `npm install -g opencode-ai` |
-| Gemini CLI | `empirio gemini` | `npm install -g @google/gemini-cli` |
-| Qwen Code | `empirio qwen` | `npm install -g @qwen-code/qwen-code` |
-| Crush | `empirio crush` | `npm install -g @charmland/crush`<br>macOS: `brew install charmbracelet/tap/crush`<br>Windows: `winget install charmbracelet.crush` |
-| Kilo CLI | `empirio kilo` | `npm install -g @kilocode/cli` |
-| Aider | `empirio aider` | `curl -LsSf https://aider.chat/install.sh \| sh`<br>Windows: `powershell -ExecutionPolicy ByPass -c "irm https://aider.chat/install.ps1 \| iex"` |
-| goose | `empirio goose` | `curl -fsSL https://github.com/aaif-goose/goose/releases/download/stable/download_cli.sh \| bash`<br>Windows: `Invoke-WebRequest -Uri "https://raw.githubusercontent.com/aaif-goose/goose/main/download_cli.ps1" -OutFile download_cli.ps1; .\download_cli.ps1` |
-| OpenHands CLI | `empirio openhands` | `uv tool install openhands --python 3.12` |
-| Factory Droid | `empirio droid` | `curl -fsSL https://app.factory.ai/cli \| sh`<br>Windows: `irm https://app.factory.ai/cli/windows \| iex` |
+| Agent | Command | EmpirioLabs AI tools | Install |
+|---|---|---|---|
+| Claude Code | `empirio claude` | yes | `curl -fsSL https://claude.ai/install.sh \| bash`<br>Windows: `irm https://claude.ai/install.ps1 \| iex` |
+| Codex CLI | `empirio codex` | yes | `npm install -g @openai/codex`<br>macOS: `brew install --cask codex` |
+| OpenCode | `empirio opencode` | yes | `curl -fsSL https://opencode.ai/install \| bash`<br>Windows: `npm install -g opencode-ai` |
+| Gemini CLI | `empirio gemini` | no | `npm install -g @google/gemini-cli` |
+| Qwen Code | `empirio qwen` | yes | `npm install -g @qwen-code/qwen-code` |
+| Crush | `empirio crush` | yes | `npm install -g @charmland/crush`<br>macOS: `brew install charmbracelet/tap/crush`<br>Windows: `winget install charmbracelet.crush` |
+| Kilo CLI | `empirio kilo` | yes | `npm install -g @kilocode/cli` |
+| Aider | `empirio aider` | no | `curl -LsSf https://aider.chat/install.sh \| sh`<br>Windows: `powershell -ExecutionPolicy ByPass -c "irm https://aider.chat/install.ps1 \| iex"` |
+| goose | `empirio goose` | no | `curl -fsSL https://github.com/aaif-goose/goose/releases/download/stable/download_cli.sh \| bash`<br>Windows: `Invoke-WebRequest -Uri "https://raw.githubusercontent.com/aaif-goose/goose/main/download_cli.ps1" -OutFile download_cli.ps1; .\download_cli.ps1` |
+| OpenHands CLI | `empirio openhands` | no | `uv tool install openhands --python 3.12` |
+| Factory Droid | `empirio droid` | no | `curl -fsSL https://app.factory.ai/cli \| sh`<br>Windows: `irm https://app.factory.ai/cli/windows \| iex` |
 <!-- agents:end -->
 
 Arguments after the agent's name go to the agent, so `empirio claude -p "explain
@@ -82,12 +82,31 @@ empirio claude -m <model>         # one session on another model
 Agents with a model for quick background work (titles, summaries) get the
 lowest-cost featured model by the same author; `--fast-model <id>` picks another.
 
+## EmpirioLabs AI tools
+
+Agents marked "yes" under "EmpirioLabs AI tools" in the table above also get the
+[EmpirioLabs AI MCP server](https://docs.empiriolabs.ai/mcp) with the same key:
+web search and research, image, video, speech, audio and 3D generation, image
+editing and analysis, the model catalog, generation jobs and your balance. A tool
+call is billed like the same API request.
+
+```sh
+empirio claude --tools all            # also GPU Cloud and hosted agents, which bill while they run
+empirio codex --tools search+media    # only these toolsets
+empirio gemini --tools none           # no EmpirioLabs AI tools
+```
+
+`EMPIRIO_TOOLS` sets the same for every session. The server is added next to the
+agent's own MCP servers for that session only, and a server you already named
+`empiriolabs` is used instead.
+
 ## Commands
 
 | Command | |
 |---|---|
 | `empirio` | Choose an agent and a model, then start it |
 | `empirio <agent> [-m <model>] [args]` | Start an agent; other arguments go to the agent |
+| `empirio <agent> --tools <set>` | Choose the EmpirioLabs AI tools: `default`, `all`, `none`, or toolsets joined by `+` |
 | `empirio <agent> --print-env` | Show what the agent would receive, with the key masked |
 | `empirio login` / `logout` | Sign in or out; `logout` also disconnects a browser sign-in |
 | `empirio models` / `model` | List models, show or set your default |
