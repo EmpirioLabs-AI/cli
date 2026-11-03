@@ -1,5 +1,5 @@
-// Package api talks to the EmpirioLabs AI API: the public model catalog and
-// the key check.
+// Package api talks to the EmpirioLabs AI API: the public model catalog, the
+// key check and job status.
 package api
 
 import (
@@ -135,4 +135,30 @@ func (c *Client) Account(ctx context.Context, key string) (Balance, error) {
 		return Balance{}, fmt.Errorf("key check: %w", err)
 	}
 	return body.Balance, nil
+}
+
+// Job reads an asynchronous job of the key's account: its status and, once
+// it has finished, its result.
+func (c *Client) Job(ctx context.Context, key, id string) (json.RawMessage, error) {
+	if strings.TrimSpace(id) == "" || len(id) > 256 {
+		return nil, fmt.Errorf("%q is not a job id", id)
+	}
+	resp, err := c.get(ctx, "/v1/jobs/"+url.PathEscape(id), key)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	switch {
+	case resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden:
+		return nil, ErrInvalidKey
+	case resp.StatusCode == http.StatusNotFound:
+		return nil, fmt.Errorf("job %s was not found", id)
+	case resp.StatusCode != http.StatusOK:
+		return nil, fmt.Errorf("job %s: HTTP %d", id, resp.StatusCode)
+	}
+	var job json.RawMessage
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 32<<20)).Decode(&job); err != nil {
+		return nil, fmt.Errorf("job %s: %w", id, err)
+	}
+	return job, nil
 }

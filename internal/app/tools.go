@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"os"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/EmpirioLabs-AI/cli/internal/agents"
@@ -24,10 +23,7 @@ func toolsURL(flag string) (string, error) {
 	if set == "" {
 		set = os.Getenv("EMPIRIO_TOOLS")
 	}
-	base := strings.TrimSpace(os.Getenv("EMPIRIO_MCP_URL"))
-	if base == "" {
-		base = agents.MCPBase
-	}
+	base := mcpBase()
 	var served []string
 	if agents.NamesToolsets(set) {
 		served = serverToolsets(base)
@@ -36,9 +32,43 @@ func toolsURL(flag string) (string, error) {
 }
 
 // serverToolsets reads the toolset and profile names from the MCP server's
-// public manifest (/manifest.json on the server's host). It returns nil when
-// the manifest cannot be read, and the server then judges the names itself.
+// public manifest. It returns nil when the manifest cannot be read, and the
+// server then judges the names itself.
 func serverToolsets(base string) []string {
+	m := readManifest(base)
+	if m == nil {
+		return nil
+	}
+	names := make([]string, 0, len(m.Toolsets)+len(m.Profiles))
+	seen := map[string]bool{}
+	for _, t := range m.Toolsets {
+		names = append(names, t.Name)
+		seen[t.Name] = true
+	}
+	for _, p := range m.Profiles {
+		if !seen[p] {
+			names = append(names, p)
+		}
+	}
+	sort.Strings(names)
+	return names
+}
+
+// manifest is what the CLI reads from the MCP server's public manifest: the
+// toolsets in the server's order, with the tools of each, and the names of
+// its listed profiles.
+type manifest struct {
+	Toolsets []toolset
+	Profiles []string
+}
+
+type toolset struct {
+	Name, Title, Description string
+	Tools                    []string
+}
+
+// readManifest reads /manifest.json on the MCP server's host, or returns nil.
+func readManifest(base string) *manifest {
 	u, err := url.Parse(base)
 	if err != nil || u.Host == "" {
 		return nil
@@ -60,22 +90,33 @@ func serverToolsets(base string) []string {
 	if resp.StatusCode != http.StatusOK {
 		return nil
 	}
-	var manifest struct {
-		Toolsets map[string]json.RawMessage `json:"toolsets"`
+	var raw struct {
+		Toolsets json.RawMessage            `json:"toolsets"`
 		Profiles map[string]json.RawMessage `json:"profiles"`
 	}
-	if err := json.NewDecoder(io.LimitReader(resp.Body, 8<<20)).Decode(&manifest); err != nil || len(manifest.Toolsets) == 0 {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 8<<20)).Decode(&raw); err != nil || len(raw.Toolsets) == 0 {
 		return nil
 	}
-	names := make([]string, 0, len(manifest.Toolsets)+len(manifest.Profiles))
-	for name := range manifest.Toolsets {
-		names = append(names, name)
+	order, err := objectKeys(raw.Toolsets)
+	if err != nil || len(order) == 0 {
+		return nil
 	}
-	for name := range manifest.Profiles {
-		if _, dup := manifest.Toolsets[name]; !dup {
-			names = append(names, name)
-		}
+	var sets map[string]struct {
+		Title       string   `json:"title"`
+		Description string   `json:"description"`
+		Tools       []string `json:"tools"`
 	}
-	sort.Strings(names)
-	return names
+	if json.Unmarshal(raw.Toolsets, &sets) != nil {
+		return nil
+	}
+	m := &manifest{}
+	for _, name := range order {
+		s := sets[name]
+		m.Toolsets = append(m.Toolsets, toolset{Name: name, Title: s.Title, Description: s.Description, Tools: s.Tools})
+	}
+	for name := range raw.Profiles {
+		m.Profiles = append(m.Profiles, name)
+	}
+	sort.Strings(m.Profiles)
+	return m
 }

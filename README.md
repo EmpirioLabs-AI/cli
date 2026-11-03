@@ -8,7 +8,11 @@ own settings stay as they are: empirio connects each session when it starts.
 empirio                 # pick an agent and a model
 empirio claude          # start Claude Code
 empirio codex -m <model>
+empirio run generate_image prompt="a lighthouse at dusk"
 ```
+
+`empirio run` runs any EmpirioLabs AI tool from the command line, such as image
+and video generation ([Run tools](#run-tools-from-the-command-line)).
 
 ## Install
 
@@ -103,6 +107,38 @@ Toolsets named with `--tools` are checked against the ones the server publishes.
 agent's own MCP servers for that session only, and a server you already named
 `empiriolabs` is used instead.
 
+## Run tools from the command line
+
+`empirio run` runs any EmpirioLabs AI tool directly: image, video, audio and 3D
+generation, image editing, speech and transcription, web search, chat, the model
+catalog, jobs, your balance, GPU Cloud and hosted agents. `empirio tools` lists
+the tools your account can run. The list comes from the
+[EmpirioLabs AI MCP server](https://docs.empiriolabs.ai/mcp), so new tools are
+available without an update.
+
+```sh
+empirio tools                     # every tool, by toolset
+empirio tools media               # the tools of one toolset
+empirio tools generate_image      # one tool's arguments
+empirio run generate_image prompt="a lighthouse at dusk" model=flux-2-klein-4b
+empirio run list_models modality=video limit=5
+empirio run get_account_usage
+```
+
+Arguments are `name=value` pairs, typed by the tool: numbers, `true` or `false`,
+and JSON for lists and objects (`image='["https://example.com/a.png"]'`; one value
+is enough for a list of text). `--json '{"prompt": "..."}'` passes the arguments
+as one object, and `--stdin` reads that object from standard input. A missing or
+unknown argument is reported before the tool runs.
+
+Images, video, audio and 3D models a tool returns are saved in the current folder
+under new file names, which are printed (`--out <dir>` saves them elsewhere,
+`--no-download` skips them). A generation that is still running is followed until
+it finishes, for up to 10 minutes (`--wait <seconds>`; `--wait 0` returns the job
+ID at once). Check on a job later with `empirio run get_job job_id=<id>`.
+`--json-output` prints the whole result as JSON. A tool call is billed like the
+same API request; GPU Cloud and hosted agents keep billing while they run.
+
 ## Commands
 
 | Command | |
@@ -113,6 +149,8 @@ agent's own MCP servers for that session only, and a server you already named
 | `empirio <agent> --print-env` | Show what the agent would receive, with the key masked |
 | `empirio login` / `logout` | Sign in or out; `logout` also disconnects a browser sign-in |
 | `empirio models` / `model` | List models, show or set your default |
+| `empirio tools [<toolset> \| <tool>]` | List the EmpirioLabs AI tools you can run, or one tool's arguments |
+| `empirio run <tool> [name=value ...]` | Run a tool and save the images, video, audio and 3D models it returns |
 | `empirio doctor` | Check your sign-in, the API and your agents |
 | `empirio agents [--json]` | List the agents empirio can start |
 | `empirio update` | Update empirio |
