@@ -29,6 +29,8 @@ func usage() string {
 	b.WriteString("  empirio login [--no-browser]    sign in with your browser (--key pastes a key)\n")
 	b.WriteString("  empirio models [--agent A]      list models with context and prices\n")
 	b.WriteString("  empirio model [<id>]            show or set your default model\n")
+	b.WriteString("  empirio tools [<toolset|tool>]  list the EmpirioLabs AI tools, or one tool's arguments\n")
+	b.WriteString("  empirio run <tool> name=value   run a tool, such as image or video generation\n")
 	b.WriteString("  empirio doctor                  check your key, the API and your agents\n")
 	b.WriteString("  empirio update                  update empirio\n")
 	b.WriteString("  empirio agents [--json]         list the agents empirio can start\n")
@@ -44,6 +46,15 @@ func usage() string {
 	b.WriteString("                        with GPU Cloud and hosted agents, which bill while they run),\n")
 	b.WriteString("                        none, or toolsets joined by +\n")
 	b.WriteString("  --print-env           show what would be passed to the agent, then exit\n\n")
+	b.WriteString(bold("Flags for run") + "\n")
+	b.WriteString("  name=value            an argument, typed by the tool: numbers, true or false,\n")
+	b.WriteString("                        and JSON for lists and objects\n")
+	b.WriteString("  --json <object>       the arguments as one JSON object; name=value pairs take precedence\n")
+	b.WriteString("  --stdin               read the arguments as a JSON object from standard input\n")
+	b.WriteString("  --out <dir>           save images, video, audio and 3D models here (default: this folder)\n")
+	b.WriteString("  --no-download         print the result without saving files\n")
+	b.WriteString("  --wait <seconds>      how long to wait for a running job (default 600; 0 returns at once)\n")
+	b.WriteString("  --json-output         print the whole result as JSON\n\n")
 	b.WriteString("Docs: " + docsURL + "\n")
 	return b.String()
 }
@@ -147,6 +158,10 @@ func run(args []string) (int, error) {
 		return doctor()
 	case "agents":
 		return 0, agentList(rest)
+	case "tools":
+		return toolsCmd(rest)
+	case "run":
+		return runCmd(rest)
 	case "update", "upgrade":
 		return 0, update(rest)
 	case "uninstall":

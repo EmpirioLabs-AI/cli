@@ -17,6 +17,10 @@ or by email to support@empiriolabs.ai. Please do not open a public issue.
   process list.
 - `empirio <agent> --print-env` shows what an agent would receive, with the key
   masked.
+- `empirio tools` and `empirio run` send the key only to the EmpirioLabs AI MCP
+  server and API, and never follow a redirect with it. Files a tool returns are
+  downloaded over HTTPS without the key, and saved under new names that never
+  replace an existing file.
 - empirio does not change an agent's own settings. Where an agent saves a setting
   of its own during a session, empirio puts back the value it found when the
   session ends.
